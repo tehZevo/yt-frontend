@@ -8,9 +8,11 @@ function extractVideoID(url){
     }
 }
 
+var corsProxy = "https://cors-anywhere.herokuapp.com/"
+
 function playlistURL(uid)
 {
-  return `https://www.youtube.com/playlist?list=UU${uid}&disable_polymer=true`;
+  return `${corsProxy}https://www.youtube.com/playlist?list=UU${uid}&disable_polymer=true`;
 }
 
 async function getVideosOfChannel(uid)
@@ -19,15 +21,18 @@ async function getVideosOfChannel(uid)
   {
     uid = uid.slice(2);
   }
-  console.log(uid);
-  $.get(playlistURL(uid), function(data) {
-    console.log(data)
-});
-  var body = await fetch(playlistURL(uid), {mode:"navigate"});
-  console.log(body)
+  console.log("fetching " + uid);
+
+  var body = await fetch(playlistURL(uid), {
+    headers: {
+      "X-Requested-With": "fetch"
+    },
+  });
+
+  body = await body.text();
+
   var s = $(body);
-  console.log(body)
-  s.find(".pl-video").map((i, e) => console.log(i, e))
+
   var videos = s.find(".pl-video").map((i, e) =>
   {
     e = $(e);
@@ -44,7 +49,9 @@ async function getVideosOfChannel(uid)
 }
 
 //generate embed
-function generateEmbed(videoID)
+function generateEmbed(videoID, autoplay)
 {
-  return `<iframe width="799" height="400" src="https://www.youtube.com/embed/${videoID}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+  autoplay = autoplay ? 1 : 0;
+  //width="799" height="400"
+  return `<iframe  src="https://www.youtube.com/embed/${videoID}?&autoplay=${autoplay}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
 }

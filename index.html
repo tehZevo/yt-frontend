@@ -3,17 +3,178 @@
   <head>
     <meta charset="utf-8">
     <title></title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
+
+    <script src="https://youtube.com/iframe_api"></script>
+
     <script src="app.js"></script>
+
+    <style>
+      .playlist {
+        height: calc(100vh - 60px);
+        overflow-y: scroll;
+      }
+      .row-container {display: flex; width: 100%; height: 100%; flex-direction: column; overflow: hidden;}
+      .second-row { flex-grow: 1;}
+
+    </style>
   </head>
   <body>
+    <div id="app">
+      <div>
+        <b-row>
+          <b-col>
+            <b-button @click="loadLTT()">Load LTT Videos</b-button>
+            <b-button @click="markUnwatched()">Mark as unwatched</b-button>
+          </b-col>
+        </b-row>
+
+        <b-row no-gutters>
+          <b-col cols=9>
+            <div class="row-container">
+              <div id="player"></div>
+            </div>
+          </b-col>
+
+          <b-col class="playlist">
+            <a  v-for="v in videos" href="#" :onclick="'setVideo(&quot;' + v.id + '&quot;);'">
+              <b-row no-gutters :class="[v.watched ? 'border-light' : 'border-primary', 'border', 'rounded']">
+                <b-col cols="3">
+                  <!--b-img fluid rounded="right" :src="v.thumb"></b-img-->
+                  <!--b-img fluid rounded="right" :src="'http://img.youtube.com/vi/' + v.id + '/mqdefault.jpg'" style=" height: 4rem;"></b-img-->
+                  <b-img fluid rounded="right" :src="'http://img.youtube.com/vi/' + v.id + '/mqdefault.jpg'"></b-img>
+                </b-col>
+                <b-col>
+                  {{v.title}}
+                </b-col>
+              </b-row>
+            </a>
+        </b-col>
+      </div>
+
+    </div>
     <script>
 
-      (async () =>
+      var app = new Vue({
+        el: '#app',
+        data: {
+          videos: [],
+        }
+      })
+
+      load();
+
+      var player;
+      var currentVideo;
+
+      function onYouTubePlayerAPIReady() {
+        player = new YT.Player('player', {
+          width: '', //:^)
+          height: '',
+          //videoId: '0Bmhjf0rKe8',
+          events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange
+          }
+        });
+        $(player.a).addClass("second-row");
+
+        //setTimeout(() => playNextUnwatchedVideo(), 5000);
+      }
+
+      // autoplay video
+      function onPlayerReady(event) {
+          event.target.playVideo();
+      }
+
+      // when video ends
+      function onPlayerStateChange(event) {
+          if(event.data === 0) {
+              playNextUnwatchedVideo()
+          }
+      }
+
+      function stopVideo() {
+        player.stopVideo();
+      }
+
+      function markUnwatched()
       {
-        var vids = await getVideosOfChannel("UUXuqSBlHAE6Xw-yeJA0Tunw");
-        console.log(vids)
-      })()
+        //TODO: avoid loop with instance method of component?
+        for(var i = 0; i < app.videos.length; i++)
+        {
+          var v = app.videos[i];
+          if(v.id == currentVideo)
+          {
+            Vue.set(app.videos[i], "watched", false);
+          }
+        }
+      }
+
+      function playNextUnwatchedVideo()
+      {
+        for(var v of app.videos)
+        {
+          if(v.watched)
+          {
+            continue;
+          }
+
+          setVideo(v.id);
+          return;
+        }
+      }
+
+      async function setVideo(id)
+      {
+        // var embed = generateEmbed(id, true);
+        // embed = $(embed);
+        // embed.addClass("second-row");
+        // $("#video").empty();
+        // $("#video").append(embed);
+        player.loadVideoById(id);
+
+        //TODO: avoid loop with instance method of component?
+        for(var i = 0; i < app.videos.length; i++)
+        {
+          var v = app.videos[i];
+          if(v.id == id)
+          {
+            Vue.set(app.videos[i], "watched", true);
+          }
+        }
+
+        currentVideo = id;
+      }
+
+      async function loadLTT()
+      {
+        var videos = await getVideosOfChannel("UUXuqSBlHAE6Xw-yeJA0Tunw");
+
+        //TODO: add instead of overwrite
+        //TODO: keep track of channels? idk
+        app.videos = videos;
+        save();
+        console.log("done");
+      }
+
+      function save()
+      {
+        window.localStorage.setItem('videos', JSON.stringify(app.videos));
+      }
+
+      async function load()
+      {
+        var videos = JSON.parse(window.localStorage.getItem('videos'));
+        console.log(videos);
+        app.videos = videos;
+      }
 
     </script>
   </body>
