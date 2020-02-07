@@ -46,8 +46,6 @@
             <a  v-for="v in videos" href="#" :onclick="'setVideo(&quot;' + v.id + '&quot;);'">
               <b-row no-gutters :class="[v.watched ? 'border-light' : 'border-primary', 'border', 'rounded']">
                 <b-col cols="3">
-                  <!--b-img fluid rounded="right" :src="v.thumb"></b-img-->
-                  <!--b-img fluid rounded="right" :src="'http://img.youtube.com/vi/' + v.id + '/mqdefault.jpg'" style=" height: 4rem;"></b-img-->
                   <b-img fluid rounded="right" :src="'http://img.youtube.com/vi/' + v.id + '/mqdefault.jpg'"></b-img>
                 </b-col>
                 <b-col>
@@ -129,6 +127,26 @@
           setVideo(v.id);
           return;
         }
+      }
+
+      //TODO: scrape channel icon + banner?
+      // addChannel("LinusTechTips")
+      // addChannel("UUXuqSBlHAE6Xw-yeJA0Tunw")
+      // addChannel("UCXuqSBlHAE6Xw-yeJA0Tunw")
+      getChannelInfo("UCXuqSBlHAE6Xw-yeJA0Tunw")
+
+      async function addChannel(id)
+      {
+        id = id.trim();
+        //if id starts with UU, change it to UC
+        id = id.startsWith("UU") ? ("UC" + id.slice(2)) : id;
+
+        if(!id.startsWith("UC"))
+        {
+          id = await getIdOfUser(id);
+        }
+
+        console.log(id);
       }
 
       async function setVideo(id)
